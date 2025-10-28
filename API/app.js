@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const db = require('./db')
 
 const app = express()
 const PORT = 5000
@@ -10,28 +11,34 @@ app.use((req, res, next) => {
     next()
 })
 
-// Simulated database - in-memory array of items
-let items = [
-    {
-        id: 1, name: 'Laptop', price: 6000
-    },
-    {
-        id: 2, name: 'Phone', price: 7500
-    },
-    {
-        id: 3, name: 'Headphones', price: 7500
-    }
-]
-
-let nextId = 4;
+const itemsCollection = db.collection('items')
 
 // Enable CORS and JSON parsing
 app.use(cors())
 app.use(express.json())
 
 // READ - Get all items
-app.get('/items', (req, res) => {
+app.get('/items', async (req, res) => {
+    try {
+        const snapshot = await itemsCollection.get()
+    
+    const items = []
+
+    snapshot.forEach(doc => {
+        items.push(
+            {
+                id: doc.id,
+                ...doc.data()
+            }
+        )
+
     res.status(200).json(items)
+    })
+
+    } catch(error){
+        console.log('ERROR: ', error)
+        res.status(500).json({error: "Failed to get items"})
+    }
 })
 
 // READ - Get single item by ID
@@ -47,7 +54,7 @@ app.get('/items/:id', (req, res) => {
 })
 
 // CREATE - Add new item
-app.post('/items', (req, res) => {
+app.post('/items', async (req, res) => {
     const { name, price } = req.body
 
     // Validate input
@@ -56,14 +63,14 @@ app.post('/items', (req, res) => {
     }
 
     const newProduct = {
-        id: nextId++,
         name: name,
         price: parseFloat(price)
     }
 
-    items.push(newProduct)
+    // items.push(newProduct)
+    const docRef = await itemsCollection.add(newProduct)
 
-    res.status(201).json({ id: newProduct.id })
+    res.status(201).json({ id: docRef.id })
 })
 
 // UPDATE - Update existing item
