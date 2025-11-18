@@ -2,11 +2,46 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { API_BASE_URL } from '@/utils/constants'
 import { useAuthStore } from './auth'
+import { db } from '@/firebase.js'
+import { collection, onSnapshot } from 'firebase/firestore'
 
 export const useProductsStore = defineStore('products', () => {
   const items = ref([])
   const isLoading = ref(false)
   const error = ref(null)
+
+    // This will hold the unsubscribe function for the real-time listener
+  let unsubscribeFromItems = null;
+
+  // Action to subscribe to real-time updates
+  function subscribeToItems() {
+    if (unsubscribeFromItems) {
+      // Already subscribed
+      return;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    const itemsCollection = collection(db, 'items');
+
+    unsubscribeFromItems = onSnapshot(itemsCollection, (snapshot) => {
+      items.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      isLoading.value = false;
+    }, (err) => {
+      error.value = err.message;
+      console.error("Error fetching items:", err);
+      isLoading.value = false;
+    });
+  }
+
+  // Action to unsubscribe from real-time updates
+  function unsubscribe() {
+    if (unsubscribeFromItems) {
+      unsubscribeFromItems();
+      unsubscribeFromItems = null;
+    }
+  }
 
   async function fetchItems() {
     isLoading.value = true
@@ -106,6 +141,8 @@ export const useProductsStore = defineStore('products', () => {
     isLoading,
     error,
     fetchItems,
+    subscribeToItems,
+    unsubscribe,
     fetchItem,
     createItem,
     updateItem,

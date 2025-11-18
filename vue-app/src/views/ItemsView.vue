@@ -1,25 +1,22 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useProductsStore } from '@/stores/products'
-import { useAuthStore } from '@/stores/auth'
-import { RouterLink } from 'vue-router'
-
+import { onMounted, onUnmounted, ref } from 'vue'                                               
+import { useProductsStore } from '@/stores/products'                                            
+import { useAuthStore } from '@/stores/auth'                                                    
+import { RouterLink } from 'vue-router' 
+import { storeToRefs } from 'pinia';
+                                                                                                                                    
 const productsStore = useProductsStore()
-const authStore = useAuthStore()
-const isLoading = ref(false)
-const errorMessage = ref('')
+const { isLoading, error: errorMessage } = storeToRefs(productsStore);                                                       
+const authStore = useAuthStore()                                                                                                                                  
+                                                                                                 
+onMounted(() => {                                                                               
+  productsStore.subscribeToItems();                                                             
+});                                                                                             
+                                                                                                
+onUnmounted(() => {                                                                             
+  productsStore.unsubscribe();                                                                  
+});    
 
-onMounted(async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-  try {
-    await productsStore.fetchItems()
-  } catch (error) {
-    errorMessage.value = error.message
-  } finally {
-    isLoading.value = false
-  }
-})
 </script>
 
 <template>
