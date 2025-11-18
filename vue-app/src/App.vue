@@ -1,5 +1,14 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const router = useRouter()
+
+function handleLogout() {
+  authStore.logout()
+  router.push('/')
+}
 </script>
 
 <template>
@@ -9,8 +18,15 @@ import { RouterLink, RouterView } from 'vue-router'
     <div class="wrapper">
       <nav>
         <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-        <RouterLink to="/register">Register</RouterLink>
+        <RouterLink to="/items">Items</RouterLink>
+        <template v-if="!authStore.isAuthenticated">
+          <RouterLink to="/register">Register</RouterLink>
+          <RouterLink to="/login">Login</RouterLink>
+        </template>
+        <template v-else>
+          <span>{{ authStore.userEmail }}</span>
+          <button @click="handleLogout">Logout</button>
+        </template>
       </nav>
     </div>
   </header>
@@ -44,6 +60,7 @@ nav {
   display: flex;
   gap: 2rem;
   font-size: 1rem;
+  align-items: center;
 }
 
 nav a {
@@ -60,5 +77,14 @@ nav a:hover {
 nav a.router-link-exact-active {
   color: #42b983;
   font-weight: 600;
+}
+
+button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
 }
 </style>

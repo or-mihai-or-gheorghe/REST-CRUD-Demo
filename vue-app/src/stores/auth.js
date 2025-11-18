@@ -28,6 +28,41 @@ export const useAuthStore = defineStore('auth', () => {
   // ACTIONS - functions that can modify state and perform async operations
 
   /**
+   * Login an existing user
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @returns {Promise<Object>} Response data or error
+   */
+  async function login(email, password) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed')
+      }
+
+      user.value = data.user
+      token.value = data.token
+
+      localStorage.setItem('authToken', data.token)
+      localStorage.setItem('authUser', JSON.stringify(data.user))
+
+      return data
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Register a new user
    * @param {string} email - User email
    * @param {string} password - User password
@@ -97,6 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userEmail,
     // Actions
+    login,
     register,
     logout,
     checkAuth
